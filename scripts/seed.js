@@ -26,6 +26,7 @@ async function seed() {
     const userCount = await User.countDocuments();
     if (userCount > 0) {
       console.log('Database already seeded. Skipping.');
+      await mongoose.disconnect();
       return;
     }
 
