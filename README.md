@@ -29,7 +29,7 @@ Follow these instructions to get the project up and running on your local machin
     ```
     Now, open `.env.local` and fill in the required values:
     -   `MONGO_URI`: Your MongoDB connection string.
-    -   `JWT_SECRET`: A long, random, and secret string used for signing authentication tokens.
+    -   `JWT_SECRET`: A long, random, and secret string used for signing authentication tokens. You can generate one easily online.
 
 4.  **Seed the database**:
     To populate the database with initial dummy data (users and rooms), run the seed script:
