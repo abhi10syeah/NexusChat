@@ -31,6 +31,10 @@ export function MessageList({ messages }: MessageListProps) {
     if (message.senderId === 'ai-assistant') {
       return { _id: 'ai', username: 'AI Assistant', name: 'AI Assistant', avatarUrl: '' };
     }
+    // Check if the sender is the current user
+    if (currentUser && message.senderId === currentUser._id) {
+      return { ...currentUser, name: currentUser.username };
+    }
     // Prioritize the sender object if it exists on the message
     if (message.sender) {
       return { ...message.sender, name: message.sender.username };
