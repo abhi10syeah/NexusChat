@@ -1,6 +1,6 @@
-# Firebase Studio - Nexus Chat
+Nexus Chat
 
-This is a Next.js chat application built in Firebase Studio. It includes a front-end built with Next.js, React, and ShadCN, and a backend powered by Next.js API Routes with MongoDB.
+This is a Next.js chat application . It includes a front-end built with Next.js, React, and ShadCN, and a backend powered by Next.js API Routes with MongoDB.
 
 ## Getting Started
 
