@@ -98,7 +98,7 @@ export function AddMembersDialog({ room }: AddMembersDialogProps) {
                 <FormItem>
                    <ScrollArea className="h-48">
                     {potentialNewMembers.length > 0 ? potentialNewMembers.map((item) => (
-                        <FormField
+                      <FormField
                         key={item._id}
                         control={form.control}
                         name="members"
@@ -128,7 +128,7 @@ export function AddMembersDialog({ room }: AddMembersDialogProps) {
                             </FormItem>
                             )
                         }}
-                        />
+                      />
                     )) : (
                         <p className="text-sm text-muted-foreground p-4 text-center">No new users to add.</p>
                     )}
