@@ -16,9 +16,10 @@ import {
 import { UserAvatar } from "./user-avatar";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
-import { LogOut, MessageSquare, Users } from "lucide-react";
+import { LogOut, MessageSquare, Plus, Users } from "lucide-react";
 import { useChatStore } from "@/lib/store";
 import { useAuth } from "@/context/AuthContext";
+import { CreateRoomDialog } from "./create-room-dialog";
 
 export function ChatSidebar() {
   const { rooms, activeRoomId, selectRoom } = useChatStore();
@@ -50,9 +51,12 @@ export function ChatSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
-            <MessageSquare className="mr-2" />
-            Channels
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <div className="flex items-center">
+              <MessageSquare className="mr-2" />
+              Channels
+            </div>
+            <CreateRoomDialog />
           </SidebarGroupLabel>
           <SidebarMenu>
             {publicRooms.map((room) => (

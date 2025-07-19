@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Message from '@/models/Message';
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: { roomId: stri
     }
 
     const messages = await Message.find({ room: roomId })
-      .populate('author', 'username')
+      .populate('author', 'username _id')
       .sort({ timestamp: 1 });
 
     return NextResponse.json(messages);
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: { roomId: str
     });
 
     await message.save();
-    const populatedMessage = await Message.findById(message._id).populate('author', 'username');
+    const populatedMessage = await Message.findById(message._id).populate('author', 'username _id');
 
     return NextResponse.json(populatedMessage, { status: 201 });
   } catch (error) {

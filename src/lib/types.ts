@@ -17,7 +17,7 @@ export interface Message {
   createdAt: string;
   type: 'text' | 'file' | 'summary';
   sender?: { _id: string, username: string };
-  roomId?: string;
+  roomId: string;
 }
 
 export interface Room {

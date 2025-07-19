@@ -72,9 +72,10 @@ class ApiClient {
   }
 
   createRoom(name: string, members: string[] = []): Promise<any> {
+    const isPublic = !name.startsWith('@'); // A simple convention
     return this.request('/rooms', {
       method: 'POST',
-      body: JSON.stringify({ name, isPublic: true, members }),
+      body: JSON.stringify({ name, isPublic, members }),
     });
   }
 

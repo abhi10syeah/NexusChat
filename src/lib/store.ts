@@ -17,6 +17,7 @@ interface ChatState {
   // Actions
   initialize: (user: User, token: string) => Promise<void>;
   selectRoom: (roomId: string) => Promise<void>;
+  createRoom: (name: string, memberIds?: string[]) => Promise<void>;
   sendMessage: (roomId: string, content: string) => Promise<void>;
   addMessage: (message: Message) => void;
   setTyping: (roomId: string, isTyping: boolean) => void;
@@ -89,6 +90,19 @@ const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
+  createRoom: async (name, memberIds = []) => {
+    try {
+      const newRoom = await api.createRoom(name, memberIds);
+      set(state => ({
+        rooms: [...state.rooms, newRoom],
+      }));
+      get().selectRoom(newRoom._id);
+    } catch (error) {
+      console.error("Failed to create room:", error);
+      throw error;
+    }
+  },
+
   sendMessage: async (roomId, content) => {
     try {
       const sentMessage = await api.sendMessage(roomId, content);
@@ -99,6 +113,7 @@ const useChatStore = create<ChatState>((set, get) => ({
          sender: sentMessage.author,
          createdAt: sentMessage.timestamp,
          type: 'text',
+         roomId: sentMessage.room,
       });
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -122,6 +137,7 @@ const useChatStore = create<ChatState>((set, get) => ({
       senderId: 'ai-assistant',
       createdAt: new Date().toISOString(),
       type: 'summary',
+      roomId: roomId,
     };
      set(state => ({
       messagesByRoomId: {
@@ -162,6 +178,7 @@ const useChatStore = create<ChatState>((set, get) => ({
       senderId: botUser._id,
       createdAt: new Date().toISOString(),
       type: 'text',
+      roomId: roomId,
     };
     set(state => ({
       messagesByRoomId: {
