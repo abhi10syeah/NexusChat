@@ -38,7 +38,7 @@ class ApiClient {
     }
 
     // For POST requests that might return a body (e.g., 201 Created)
-    if (res.status === 201) {
+    if (res.status === 200 || res.status === 201) {
       // Try to parse json, but if it fails, return an empty object
       try {
         return await res.json();
@@ -80,6 +80,13 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ name, isPublic, members }),
     });
+  }
+
+  addMembersToRoom(roomId: string, memberIds: string[]): Promise<any> {
+      return this.request(`/rooms/${roomId}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ memberIds }),
+      });
   }
 
   // Messages

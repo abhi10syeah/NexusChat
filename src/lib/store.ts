@@ -18,6 +18,7 @@ interface ChatState {
   initialize: (user: User, token: string) => Promise<void>;
   selectRoom: (roomId: string) => Promise<void>;
   createRoom: (name: string, isPublic: boolean, memberIds?: string[]) => Promise<void>;
+  addMembersToRoom: (roomId: string, memberIds: string[]) => Promise<void>;
   sendMessage: (roomId: string, content: string) => Promise<void>;
   addMessage: (message: Message) => void;
   setTyping: (roomId: string, isTyping: boolean) => void;
@@ -61,21 +62,24 @@ const useChatStore = create<ChatState>((set, get) => ({
 
       const populatedRooms = rooms.map(room => {
         if (!room.isPublic && room.members.length === 2) {
-          const partnerId = room.members.find(m => m !== user._id);
+          const partnerId = room.members.find((m: any) => m._id !== user._id)?._id;
           const partner = allUsers.find(u => u._id === partnerId);
           return {...room, name: partner?.username || room.name };
         }
         return room;
       });
+      
+      const finalRooms = populatedRooms.map(r => ({...r, members: r.members.map((m: any) => m._id)}));
 
-      set({ rooms: populatedRooms, users: allUsers, isDataLoading: false });
+
+      set({ rooms: finalRooms, users: allUsers, isDataLoading: false });
       if (rooms.length > 0) {
         // Select the first public channel by default
-        const firstPublicRoom = populatedRooms.find(r => r.isPublic && r.name ==='#general');
+        const firstPublicRoom = finalRooms.find(r => r.isPublic && r.name ==='#general');
         if (firstPublicRoom) {
           get().selectRoom(firstPublicRoom._id);
-        } else if (populatedRooms.length > 0) {
-          get().selectRoom(populatedRooms[0]._id);
+        } else if (finalRooms.length > 0) {
+          get().selectRoom(finalRooms[0]._id);
         }
       }
     } catch (error) {
@@ -130,12 +134,7 @@ const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       const newRoom = await api.createRoom(name, isPublic, memberIds);
-      const populatedRoom = { ...newRoom };
-
-      // Manually populate members if backend doesn't
-      if (newRoom.members.every((m: any) => typeof m === 'string')) {
-         populatedRoom.members = users.filter(u => newRoom.members.includes(u._id));
-      }
+      const populatedRoom = { ...newRoom, members: newRoom.members.map((m: any) => m._id) };
       
       set(state => ({
         rooms: [...state.rooms, populatedRoom],
@@ -143,6 +142,20 @@ const useChatStore = create<ChatState>((set, get) => ({
       get().selectRoom(newRoom._id);
     } catch (error) {
       console.error("Failed to create room:", error);
+      throw error;
+    }
+  },
+
+  addMembersToRoom: async (roomId, memberIds) => {
+    try {
+      const updatedRoom = await api.addMembersToRoom(roomId, memberIds);
+      const finalRoom = { ...updatedRoom, members: updatedRoom.members.map((m: any) => m._id) };
+
+      set(state => ({
+        rooms: state.rooms.map(r => r._id === roomId ? finalRoom : r),
+      }));
+    } catch (error) {
+      console.error(`Failed to add members to room ${roomId}:`, error);
       throw error;
     }
   },

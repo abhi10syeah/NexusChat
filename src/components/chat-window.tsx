@@ -12,6 +12,7 @@ import { summarizeChatroom } from '@/ai/flows/summarize-chatroom';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from './ui/alert-dialog';
 import { useAuth } from '@/context/AuthContext';
+import { AddMembersDialog } from './add-members-dialog';
 
 export function ChatWindow() {
   const {
@@ -69,7 +70,7 @@ export function ChatWindow() {
 
   const getRoomDisplayName = () => {
     if (!activeRoom) return "";
-    if (activeRoom.isPublic) return `# ${activeRoom.name}`;
+    if (activeRoom.isPublic) return activeRoom.name;
 
     const partnerId = activeRoom.members.find(id => id !== currentUser?._id);
     const partner = users.find(u => u._id === partnerId);
@@ -78,7 +79,7 @@ export function ChatWindow() {
 
   const getRoomUsers = () => {
     if (!activeRoom) return [];
-    return users.filter(u => activeRoom.members.some(m => m === u._id));
+    return users.filter(u => activeRoom.members.some(mId => mId === u._id));
   };
   
   const roomUsers = getRoomUsers();
@@ -111,6 +112,7 @@ export function ChatWindow() {
                 </div>
             )}
           </div>
+          {activeRoom.isPublic && <AddMembersDialog room={activeRoom} />}
           <Button variant="outline" size="sm" onClick={handleSummarize} disabled={isSummarizing}>
             {isSummarizing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
             Summarize
