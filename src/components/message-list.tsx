@@ -31,6 +31,7 @@ export function MessageList({ messages }: MessageListProps) {
     if (senderId === 'ai-assistant') {
       return { _id: 'ai', username: 'AI Assistant', name: 'AI Assistant', avatarUrl: '' };
     }
+    // Explicitly check if the sender is the current logged-in user.
     if (currentUser?._id === senderId) {
       return { ...currentUser, name: currentUser.username };
     }
@@ -51,7 +52,7 @@ export function MessageList({ messages }: MessageListProps) {
           const isFirstInGroup = !prevMessage || prevMessage.senderId !== message.senderId;
           const isLastInGroup = !nextMessage || nextMessage.senderId !== message.senderId;
 
-          if (!sender) return null;
+          if (!sender || sender.username === 'Unknown') return null;
 
           if (message.type === 'summary') {
             return (
