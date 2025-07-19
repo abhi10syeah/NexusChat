@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -17,14 +18,14 @@ import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 import { LogOut, MessageSquare, Users } from "lucide-react";
 import { useChatStore } from "@/lib/store";
-import { cn } from "@/lib/utils";
-import { Badge } from "./ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 export function ChatSidebar() {
-  const { rooms, activeRoomId, selectRoom, currentUser } = useChatStore();
+  const { rooms, activeRoomId, selectRoom } = useChatStore();
+  const { user, logout } = useAuth();
 
-  const publicRooms = rooms.filter((room) => room.type === 'public');
-  const directMessages = rooms.filter((room) => room.type === 'dm');
+  const publicRooms = rooms.filter((room) => room.isPublic);
+  const directMessages = rooms.filter((room) => !room.isPublic);
 
   return (
     <Sidebar>
@@ -55,16 +56,13 @@ export function ChatSidebar() {
           </SidebarGroupLabel>
           <SidebarMenu>
             {publicRooms.map((room) => (
-              <SidebarMenuItem key={room.id}>
+              <SidebarMenuItem key={room._id}>
                 <SidebarMenuButton
-                  onClick={() => selectRoom(room.id)}
-                  isActive={activeRoomId === room.id}
+                  onClick={() => selectRoom(room._id)}
+                  isActive={activeRoomId === room._id}
                   className="justify-between"
                 >
-                  <span className="truncate"># {room.name}</span>
-                  {room.unreadCount && room.unreadCount > 0 ? (
-                    <Badge variant="secondary">{room.unreadCount}</Badge>
-                  ) : null}
+                  <span className="truncate">{room.name}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -76,17 +74,17 @@ export function ChatSidebar() {
             Direct Messages
           </SidebarGroupLabel>
           <SidebarMenu>
+             {directMessages.length === 0 && (
+                <p className="text-xs text-muted-foreground px-2">No direct messages yet.</p>
+             )}
             {directMessages.map((room) => (
-              <SidebarMenuItem key={room.id}>
+              <SidebarMenuItem key={room._id}>
                 <SidebarMenuButton
-                  onClick={() => selectRoom(room.id)}
-                  isActive={activeRoomId === room.id}
+                  onClick={() => selectRoom(room._id)}
+                  isActive={activeRoomId === room._id}
                   className="justify-between"
                 >
                   <span className="truncate">{room.name}</span>
-                  {room.unreadCount && room.unreadCount > 0 ? (
-                    <Badge variant="default" className="bg-accent text-accent-foreground">{room.unreadCount}</Badge>
-                  ) : null}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
@@ -94,20 +92,22 @@ export function ChatSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarSeparator />
-      <SidebarFooter>
-        <div className="flex items-center justify-between p-2">
-          <div className="flex items-center gap-2">
-            <UserAvatar user={currentUser} className="w-8 h-8"/>
-            <span className="font-medium">{currentUser.name}</span>
+      {user && (
+        <SidebarFooter>
+          <div className="flex items-center justify-between p-2">
+            <div className="flex items-center gap-2">
+              <UserAvatar user={{...user, name: user.username}} className="w-8 h-8"/>
+              <span className="font-medium">{user.username}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <Button variant="ghost" size="icon" onClick={logout}>
+                <LogOut size={18} />
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <ThemeToggle />
-            <Button variant="ghost" size="icon">
-              <LogOut size={18} />
-            </Button>
-          </div>
-        </div>
-      </SidebarFooter>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }

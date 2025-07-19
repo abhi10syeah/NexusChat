@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef } from 'react';
@@ -28,9 +29,10 @@ export function MessageList({ messages }: MessageListProps) {
 
   const getSender = (senderId: string) => {
     if (senderId === 'ai-assistant') {
-      return { id: 'ai', name: 'AI Assistant', avatarUrl: '', status: 'online' };
+      return { _id: 'ai', username: 'AI Assistant', name: 'AI Assistant', avatarUrl: '' };
     }
-    return users.find(user => user.id === senderId);
+    const user = users.find(user => user._id === senderId);
+    return user ? {...user, name: user.username} : { _id: 'unknown', username: 'Unknown', name: 'Unknown', avatarUrl: ''};
   };
 
   return (
@@ -38,14 +40,14 @@ export function MessageList({ messages }: MessageListProps) {
       <div className="p-4 space-y-4">
         {messages.map((message, index) => {
           const sender = getSender(message.senderId);
-          const isCurrentUser = message.senderId === currentUser.id;
+          const isCurrentUser = currentUser ? message.senderId === currentUser._id : false;
           const showAvatar = index === 0 || messages[index - 1].senderId !== message.senderId;
           
           if (!sender) return null;
 
           if (message.type === 'summary') {
             return (
-              <div key={message.id} className="relative my-6 text-center">
+              <div key={message._id} className="relative my-6 text-center">
                  <hr className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-border" />
                  <span className="relative bg-background px-4 text-sm text-muted-foreground flex items-center justify-center gap-2 mx-auto w-fit">
                     <Bot className="w-4 h-4" />
@@ -57,7 +59,7 @@ export function MessageList({ messages }: MessageListProps) {
 
           return (
             <div
-              key={message.id}
+              key={message._id}
               className={cn('flex items-start gap-3', {
                 'justify-end': isCurrentUser,
                 'flex-col': showAvatar,

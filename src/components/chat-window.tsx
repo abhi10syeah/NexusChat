@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -24,17 +25,17 @@ export function ChatWindow() {
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
 
-  const activeRoom = rooms.find(room => room.id === activeRoomId);
+  const activeRoom = rooms.find(room => room._id === activeRoomId);
   const messages = activeRoomId ? messagesByRoomId[activeRoomId] || [] : [];
   const roomTypingUsers = (activeRoomId ? typingUsers[activeRoomId] : []) || [];
-  const roomTypingUserObjects = users.filter(user => roomTypingUsers.includes(user.id));
+  const roomTypingUserObjects = users.filter(user => roomTypingUsers.includes(user._id));
 
   const handleSummarize = async () => {
     if (!activeRoomId) return;
     setIsSummarizing(true);
     try {
       const last20Messages = messages.slice(-20).map(m => {
-        const sender = users.find(u => u.id === m.senderId)?.name || 'Unknown';
+        const sender = users.find(u => u._id === m.senderId)?.username || 'Unknown';
         return `${sender}: ${m.content}`;
       });
       
@@ -44,6 +45,7 @@ export function ChatWindow() {
           description: "Need at least 3 messages to create a summary.",
           variant: "destructive"
         });
+        setIsSummarizing(false);
         return;
       }
 
@@ -64,8 +66,8 @@ export function ChatWindow() {
   };
 
   const getRoomUsers = () => {
-    if (!activeRoom || activeRoom.type !== 'dm') return users.filter(u => u.status === 'online');
-    return users.filter(user => activeRoom.userIds?.includes(user.id));
+    if (!activeRoom) return [];
+    return users.filter(u => activeRoom.members.includes(u._id));
   };
   
   const roomUsers = getRoomUsers();
@@ -85,13 +87,13 @@ export function ChatWindow() {
       <header className="flex items-center justify-between p-4 border-b">
         <div>
           <h2 className="text-xl font-bold font-headline">
-            {activeRoom.type === 'public' ? `# ${activeRoom.name}` : activeRoom.name}
+            {activeRoom.isPublic ? `# ${activeRoom.name}` : activeRoom.name}
           </h2>
-          <p className="text-sm text-muted-foreground">{activeRoom.type === 'public' ? `${roomUsers.length} members online` : 'Direct Message'}</p>
+          <p className="text-sm text-muted-foreground">{activeRoom.isPublic ? `${roomUsers.length} members` : 'Direct Message'}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex -space-x-2 overflow-hidden">
-            {roomUsers.slice(0,3).map(user => <UserAvatar key={user.id} user={user} className="w-8 h-8 border-2 border-background" />)}
+            {roomUsers.slice(0,3).map(user => <UserAvatar key={user._id} user={{...user, name: user.username}} className="w-8 h-8 border-2 border-background" />)}
             {roomUsers.length > 3 && (
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold border-2 border-background">
                     +{roomUsers.length - 3}
@@ -108,7 +110,7 @@ export function ChatWindow() {
       <div className="p-4 border-t">
         <div className="h-6 text-sm text-muted-foreground italic transition-opacity duration-300">
             {roomTypingUserObjects.length > 0 &&
-                `${roomTypingUserObjects.map(u => u.name).join(', ')} ${roomTypingUserObjects.length === 1 ? 'is' : 'are'} typing...`
+                `${roomTypingUserObjects.map(u => u.username).join(', ')} ${roomTypingUserObjects.length === 1 ? 'is' : 'are'} typing...`
             }
         </div>
         <MessageInput roomId={activeRoomId} />

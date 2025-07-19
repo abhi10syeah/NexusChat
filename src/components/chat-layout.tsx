@@ -1,32 +1,30 @@
+
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ChatWindow } from "@/components/chat-window";
 import { useChatStore } from '@/lib/store';
+import { useAuth } from '@/context/AuthContext';
 
 export function ChatLayout() {
-  const { _addBotMessage } = useChatStore();
-  const [isClient, setIsClient] = useState(false);
+  const { user, token } = useAuth();
+  const { initialize, isDataLoading } = useChatStore();
 
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    // Simulate a bot message after a delay to make the chat feel alive
-    const timer = setTimeout(() => {
-      _addBotMessage('room-1', 'Welcome to Nexus Chat! Feel free to look around.');
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [isClient, _addBotMessage]);
-
-  if (!isClient) {
-    return null; // or a loading spinner
+    if (user && token) {
+      initialize(user, token);
+    }
+  }, [user, token, initialize]);
+  
+  if (isDataLoading) {
+     return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p className="ml-4 text-muted-foreground">Loading your chat experience...</p>
+      </div>
+    );
   }
 
   return (

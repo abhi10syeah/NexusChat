@@ -1,35 +1,9 @@
+
 "use client";
 
 import { create } from 'zustand';
 import type { Room, User, Message } from './types';
-
-const MOCK_USERS: User[] = [
-  { id: 'user-1', name: 'Alice', avatarUrl: 'https://placehold.co/40x40/BF40BF/FFFFFF', status: 'online' },
-  { id: 'user-2', name: 'Bob', avatarUrl: 'https://placehold.co/40x40/4B0082/FFFFFF', status: 'online' },
-  { id: 'user-3', name: 'Charlie', avatarUrl: 'https://placehold.co/40x40/8A2BE2/FFFFFF', status: 'offline' },
-  { id: 'user-4', name: 'David', avatarUrl: 'https://placehold.co/40x40/9932CC/FFFFFF', status: 'online' },
-];
-
-const MOCK_ROOMS: Room[] = [
-  { id: 'room-1', name: '#general', type: 'public', lastMessage: 'See you there!', unreadCount: 3 },
-  { id: 'room-2', name: '#random', type: 'public', lastMessage: 'Has anyone seen the new trailer?', unreadCount: 0 },
-  { id: 'room-3', name: '#tech', type: 'public', lastMessage: 'Just pushed a new update.', unreadCount: 1 },
-  { id: 'dm-1', name: 'Bob', type: 'dm', userIds: ['user-1', 'user-2'], lastMessage: 'Hey, are you free for a call?', unreadCount: 1 },
-  { id: 'dm-2', name: 'Charlie', type: 'dm', userIds: ['user-1', 'user-3'], lastMessage: 'Okay, sounds good.', unreadCount: 0 },
-];
-
-const MOCK_MESSAGES: Record<string, Message[]> = {
-  'room-1': [
-    { id: 'msg-1-1', content: 'Hey everyone!', senderId: 'user-1', createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), type: 'text' },
-    { id: 'msg-1-2', content: 'Hello Alice!', senderId: 'user-2', createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(), type: 'text' },
-    { id: 'msg-1-3', content: 'Meeting at 3 PM today.', senderId: 'user-4', createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(), type: 'text' },
-    { id: 'msg-1-4', content: 'Got it, thanks for the reminder.', senderId: 'user-1', createdAt: new Date(Date.now() - 1000 * 60 * 1).toISOString(), type: 'text' },
-    { id: 'msg-1-5', content: 'See you there!', senderId: 'user-2', createdAt: new Date().toISOString(), type: 'text' },
-  ],
-  'dm-1': [
-     { id: 'msg-dm-1-1', content: 'Hey, are you free for a call?', senderId: 'user-2', createdAt: new Date().toISOString(), type: 'text' },
-  ]
-};
+import { api } from './api';
 
 interface ChatState {
   users: User[];
@@ -37,41 +11,113 @@ interface ChatState {
   messagesByRoomId: Record<string, Message[]>;
   activeRoomId: string | null;
   typingUsers: Record<string, string[]>;
-  currentUser: User;
-  selectRoom: (roomId: string) => void;
-  sendMessage: (roomId: string, content: string) => void;
+  currentUser: User | null;
+  isDataLoading: boolean;
+
+  // Actions
+  initialize: (user: User, token: string) => Promise<void>;
+  selectRoom: (roomId: string) => Promise<void>;
+  sendMessage: (roomId: string, content: string) => Promise<void>;
+  addMessage: (message: Message) => void;
   setTyping: (roomId: string, isTyping: boolean) => void;
   addSummaryMessage: (roomId: string, summary: string) => void;
   _addBotMessage: (roomId: string, content: string) => void;
+  setCurrentUser: (user: User) => void;
+  clearStore: () => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
-  users: MOCK_USERS,
-  rooms: MOCK_ROOMS,
-  messagesByRoomId: MOCK_MESSAGES,
-  activeRoomId: 'room-1',
+const useChatStore = create<ChatState>((set, get) => ({
+  users: [],
+  rooms: [],
+  messagesByRoomId: {},
+  activeRoomId: null,
   typingUsers: {},
-  currentUser: MOCK_USERS[0],
-  selectRoom: (roomId) => set({ activeRoomId: roomId }),
-  sendMessage: (roomId, content) => {
-    const { currentUser } = get();
-    const newMessage: Message = {
-      id: `msg-${Date.now()}`,
-      content,
-      senderId: currentUser.id,
-      createdAt: new Date().toISOString(),
-      type: 'text',
-    };
+  currentUser: null,
+  isDataLoading: true,
+
+  setCurrentUser: (user) => set({ currentUser: user }),
+  
+  clearStore: () => set({
+    users: [],
+    rooms: [],
+    messagesByRoomId: {},
+    activeRoomId: null,
+    typingUsers: {},
+    currentUser: null,
+    isDataLoading: true,
+  }),
+
+  initialize: async (user, token) => {
+    set({ currentUser: user, isDataLoading: true });
+    api.setToken(token);
+    try {
+      const [rooms, users] = await Promise.all([
+        api.getRooms(),
+        api.getUsers()
+      ]);
+      set({ rooms, users, isDataLoading: false });
+      if (rooms.length > 0) {
+        get().selectRoom(rooms[0]._id);
+      }
+    } catch (error) {
+      console.error("Initialization failed:", error);
+      set({ isDataLoading: false });
+    }
+  },
+
+  selectRoom: async (roomId) => {
+    set({ activeRoomId: roomId });
+    if (!get().messagesByRoomId[roomId]) {
+      try {
+        const messages = await api.getMessages(roomId);
+        set(state => ({
+          messagesByRoomId: {
+            ...state.messagesByRoomId,
+            [roomId]: messages.map(m => ({
+              _id: m._id,
+              content: m.text,
+              senderId: m.author._id,
+              sender: m.author,
+              createdAt: m.timestamp,
+              type: 'text',
+            })),
+          },
+        }));
+      } catch (error) {
+        console.error(`Failed to fetch messages for room ${roomId}:`, error);
+      }
+    }
+  },
+
+  sendMessage: async (roomId, content) => {
+    try {
+      const sentMessage = await api.sendMessage(roomId, content);
+      get().addMessage({
+         _id: sentMessage._id,
+         content: sentMessage.text,
+         senderId: sentMessage.author._id,
+         sender: sentMessage.author,
+         createdAt: sentMessage.timestamp,
+         type: 'text',
+      });
+    } catch (error) {
+      console.error("Failed to send message:", error);
+    }
+  },
+
+  addMessage: (message) => {
+    const roomId = message.roomId!;
     set(state => ({
       messagesByRoomId: {
         ...state.messagesByRoomId,
-        [roomId]: [...(state.messagesByRoomId[roomId] || []), newMessage],
+        [roomId]: [...(state.messagesByRoomId[roomId] || []), message],
       },
     }));
   },
+
   addSummaryMessage: (roomId, summary) => {
     const newMessage: Message = {
-      id: `summary-${Date.now()}`,
+      _id: `summary-${Date.now()}`,
       content: summary,
       senderId: 'ai-assistant',
       createdAt: new Date().toISOString(),
@@ -84,33 +130,36 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
     }));
   },
+  
   setTyping: (roomId, isTyping) => {
      const { currentUser, typingUsers } = get();
+     if (!currentUser) return;
      const currentTyping = typingUsers[roomId] || [];
      
-     if (isTyping && !currentTyping.includes(currentUser.id)) {
+     if (isTyping && !currentTyping.includes(currentUser._id)) {
         set({
             typingUsers: {
                 ...typingUsers,
-                [roomId]: [...currentTyping, currentUser.id]
+                [roomId]: [...currentTyping, currentUser._id]
             }
         });
      } else if (!isTyping) {
         set({
             typingUsers: {
                 ...typingUsers,
-                [roomId]: currentTyping.filter(id => id !== currentUser.id)
+                [roomId]: currentTyping.filter(id => id !== currentUser._id)
             }
         });
      }
   },
+
   _addBotMessage: (roomId, content) => {
-    const botUser = get().users[1]; // Bob
+    const botUser = get().users[1];
     if (!botUser) return;
     const newMessage: Message = {
-      id: `msg-${Date.now()}`,
+      _id: `msg-${Date.now()}`,
       content,
-      senderId: botUser.id,
+      senderId: botUser._id,
       createdAt: new Date().toISOString(),
       type: 'text',
     };
@@ -121,16 +170,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       },
     }));
 
-    // Simulate bot typing
     const currentTyping = get().typingUsers[roomId] || [];
     set(state => ({
-        typingUsers: { ...state.typingUsers, [roomId]: [...currentTyping, botUser.id]}
+        typingUsers: { ...state.typingUsers, [roomId]: [...currentTyping, botUser._id]}
     }))
 
     setTimeout(() => {
         set(state => ({
-            typingUsers: { ...state.typingUsers, [roomId]: (state.typingUsers[roomId] || []).filter(id => id !== botUser.id)}
+            typingUsers: { ...state.typingUsers, [roomId]: (state.typingUsers[roomId] || []).filter(id => id !== botUser._id)}
         }))
     }, 2000);
   },
 }));
+
+export { useChatStore };
