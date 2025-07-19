@@ -27,15 +27,16 @@ export function MessageList({ messages }: MessageListProps) {
     }
   }, [messages]);
 
-  const getSender = (senderId: string) => {
-    if (senderId === 'ai-assistant') {
+  const getSender = (message: Message) => {
+    if (message.senderId === 'ai-assistant') {
       return { _id: 'ai', username: 'AI Assistant', name: 'AI Assistant', avatarUrl: '' };
     }
-    // Explicitly check if the sender is the current logged-in user.
-    if (currentUser?._id === senderId) {
-      return { ...currentUser, name: currentUser.username };
+    // Prioritize the sender object if it exists on the message
+    if (message.sender) {
+      return { ...message.sender, name: message.sender.username };
     }
-    const user = users.find(user => user._id === senderId);
+    // Fallback to searching the user list
+    const user = users.find(user => user._id === message.senderId);
     return user ? {...user, name: user.username} : { _id: 'unknown', username: 'Unknown', name: 'Unknown', avatarUrl: ''};
   };
 
@@ -43,7 +44,7 @@ export function MessageList({ messages }: MessageListProps) {
     <ScrollArea className="flex-1" ref={scrollAreaRef}>
       <div className="p-4 space-y-1">
         {messages.map((message, index) => {
-          const sender = getSender(message.senderId);
+          const sender = getSender(message);
           const isCurrentUser = currentUser ? message.senderId === currentUser._id : false;
           
           const prevMessage = messages[index - 1];
@@ -52,7 +53,7 @@ export function MessageList({ messages }: MessageListProps) {
           const isFirstInGroup = !prevMessage || prevMessage.senderId !== message.senderId;
           const isLastInGroup = !nextMessage || nextMessage.senderId !== message.senderId;
 
-          if (!sender || sender.username === 'Unknown') return null;
+          if (!sender) return null;
 
           if (message.type === 'summary') {
             return (
