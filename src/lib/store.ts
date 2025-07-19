@@ -59,9 +59,24 @@ const useChatStore = create<ChatState>((set, get) => ({
 
       const allUsers = [user, ...users];
 
-      set({ rooms, users: allUsers, isDataLoading: false });
+      const populatedRooms = rooms.map(room => {
+        if (!room.isPublic && room.members.length === 2) {
+          const partnerId = room.members.find(m => m !== user._id);
+          const partner = allUsers.find(u => u._id === partnerId);
+          return {...room, name: partner?.username || room.name };
+        }
+        return room;
+      });
+
+      set({ rooms: populatedRooms, users: allUsers, isDataLoading: false });
       if (rooms.length > 0) {
-        get().selectRoom(rooms[0]._id);
+        // Select the first public channel by default
+        const firstPublicRoom = populatedRooms.find(r => r.isPublic && r.name ==='#general');
+        if (firstPublicRoom) {
+          get().selectRoom(firstPublicRoom._id);
+        } else if (populatedRooms.length > 0) {
+          get().selectRoom(populatedRooms[0]._id);
+        }
       }
     } catch (error) {
       console.error("Initialization failed:", error);
@@ -84,6 +99,7 @@ const useChatStore = create<ChatState>((set, get) => ({
               sender: m.author,
               createdAt: m.timestamp,
               type: 'text',
+              roomId: m.room,
             })),
           },
         }));
@@ -94,10 +110,35 @@ const useChatStore = create<ChatState>((set, get) => ({
   },
 
   createRoom: async (name, isPublic, memberIds = []) => {
+    const { rooms, currentUser, users } = get();
+    if (!currentUser) throw new Error("User not authenticated");
+    
+    // Check for existing DM
+    if (!isPublic && memberIds.length === 1) {
+        const partnerId = memberIds[0];
+        const existingRoom = rooms.find(room => 
+            !room.isPublic && 
+            room.members.length === 2 && 
+            room.members.includes(partnerId) && 
+            room.members.includes(currentUser._id)
+        );
+        if (existingRoom) {
+            get().selectRoom(existingRoom._id);
+            return;
+        }
+    }
+
     try {
       const newRoom = await api.createRoom(name, isPublic, memberIds);
+      const populatedRoom = { ...newRoom };
+
+      // Manually populate members if backend doesn't
+      if (newRoom.members.every((m: any) => typeof m === 'string')) {
+         populatedRoom.members = users.filter(u => newRoom.members.includes(u._id));
+      }
+      
       set(state => ({
-        rooms: [...state.rooms, newRoom],
+        rooms: [...state.rooms, populatedRoom],
       }));
       get().selectRoom(newRoom._id);
     } catch (error) {

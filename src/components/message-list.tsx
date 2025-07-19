@@ -37,12 +37,17 @@ export function MessageList({ messages }: MessageListProps) {
 
   return (
     <ScrollArea className="flex-1" ref={scrollAreaRef}>
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-1">
         {messages.map((message, index) => {
           const sender = getSender(message.senderId);
           const isCurrentUser = currentUser ? message.senderId === currentUser._id : false;
-          const showAvatar = index === 0 || messages[index - 1].senderId !== message.senderId;
           
+          const prevMessage = messages[index - 1];
+          const nextMessage = messages[index + 1];
+
+          const isFirstInGroup = !prevMessage || prevMessage.senderId !== message.senderId;
+          const isLastInGroup = !nextMessage || nextMessage.senderId !== message.senderId;
+
           if (!sender) return null;
 
           if (message.type === 'summary') {
@@ -60,37 +65,43 @@ export function MessageList({ messages }: MessageListProps) {
           return (
             <div
               key={message._id}
-              className={cn('flex items-start gap-3', {
+              className={cn('flex items-end gap-2', {
                 'justify-end': isCurrentUser,
-                'flex-col': showAvatar,
-                'pl-11': !showAvatar && !isCurrentUser
+                'mt-4': isFirstInGroup,
               })}
             >
-              {!isCurrentUser && showAvatar && (
-                <div className="flex items-end gap-2">
-                    <UserAvatar user={sender} className="w-8 h-8" />
-                    <p className="text-sm font-medium">{sender.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                        {format(new Date(message.createdAt), 'h:mm a')}
-                    </p>
-                </div>
+              {!isCurrentUser && (
+                <UserAvatar 
+                    user={sender} 
+                    className={cn(
+                      'w-8 h-8', 
+                      isLastInGroup ? 'visible' : 'invisible'
+                    )} 
+                />
               )}
               <div
                 className={cn(
-                  'max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg',
+                  'max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-lg flex flex-col',
                   isCurrentUser
-                    ? 'bg-primary text-primary-foreground rounded-br-none'
-                    : 'bg-muted rounded-bl-none',
-                   !showAvatar && 'mt-1'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted',
+                  isFirstInGroup && !isCurrentUser && 'rounded-tl-none',
+                  isFirstInGroup && isCurrentUser && 'rounded-tr-none',
+                  isLastInGroup && !isCurrentUser && 'rounded-bl-none',
+                  isLastInGroup && isCurrentUser && 'rounded-br-none',
                 )}
               >
+                {!isCurrentUser && isFirstInGroup && (
+                    <p className="text-xs font-semibold mb-1 text-primary">{sender.name}</p>
+                )}
                 <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-              </div>
-              {isCurrentUser && showAvatar && (
-                 <p className="text-xs text-muted-foreground self-end">
+                 <p className={cn(
+                    "text-xs mt-1 self-end",
+                    isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground/70"
+                 )}>
                     {format(new Date(message.createdAt), 'h:mm a')}
                 </p>
-              )}
+              </div>
             </div>
           );
         })}

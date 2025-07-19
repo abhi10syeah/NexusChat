@@ -23,11 +23,18 @@ import { CreateRoomDialog } from "./create-room-dialog";
 import { CreateDmDialog } from "./create-dm-dialog";
 
 export function ChatSidebar() {
-  const { rooms, activeRoomId, selectRoom } = useChatStore();
+  const { rooms, activeRoomId, selectRoom, users } = useChatStore();
   const { user, logout } = useAuth();
 
   const publicRooms = rooms.filter((room) => room.isPublic);
   const directMessages = rooms.filter((room) => !room.isPublic);
+
+  const getDmPartnerName = (room: any) => {
+    if (!user) return room.name;
+    const partnerId = room.members.find((memberId: string) => memberId !== user._id);
+    const partner = users.find(u => u._id === partnerId);
+    return partner ? partner.username : room.name;
+  };
 
   return (
     <Sidebar>
@@ -92,7 +99,7 @@ export function ChatSidebar() {
                   isActive={activeRoomId === room._id}
                   className="justify-between"
                 >
-                  <span className="truncate">{room.name}</span>
+                  <span className="truncate">{getDmPartnerName(room)}</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}

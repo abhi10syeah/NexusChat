@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import { summarizeChatroom } from '@/ai/flows/summarize-chatroom';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from './ui/alert-dialog';
+import { useAuth } from '@/context/AuthContext';
 
 export function ChatWindow() {
   const {
@@ -21,6 +22,7 @@ export function ChatWindow() {
     typingUsers,
     addSummaryMessage
   } = useChatStore();
+  const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
@@ -65,9 +67,18 @@ export function ChatWindow() {
     }
   };
 
+  const getRoomDisplayName = () => {
+    if (!activeRoom) return "";
+    if (activeRoom.isPublic) return `# ${activeRoom.name}`;
+
+    const partnerId = activeRoom.members.find(id => id !== currentUser?._id);
+    const partner = users.find(u => u._id === partnerId);
+    return partner ? partner.username : "Direct Message";
+  }
+
   const getRoomUsers = () => {
     if (!activeRoom) return [];
-    return users.filter(u => activeRoom.members.includes(u._id));
+    return users.filter(u => activeRoom.members.some(m => m === u._id));
   };
   
   const roomUsers = getRoomUsers();
@@ -87,7 +98,7 @@ export function ChatWindow() {
       <header className="flex items-center justify-between p-4 border-b">
         <div>
           <h2 className="text-xl font-bold font-headline">
-            {activeRoom.isPublic ? `# ${activeRoom.name}` : activeRoom.name}
+            {getRoomDisplayName()}
           </h2>
           <p className="text-sm text-muted-foreground">{activeRoom.isPublic ? `${roomUsers.length} members` : 'Direct Message'}</p>
         </div>
