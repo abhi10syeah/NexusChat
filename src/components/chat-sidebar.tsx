@@ -20,6 +20,7 @@ import { LogOut, MessageSquare, Plus, Users } from "lucide-react";
 import { useChatStore } from "@/lib/store";
 import { useAuth } from "@/context/AuthContext";
 import { CreateRoomDialog } from "./create-room-dialog";
+import { CreateDmDialog } from "./create-dm-dialog";
 
 export function ChatSidebar() {
   const { rooms, activeRoomId, selectRoom } = useChatStore();
@@ -53,7 +54,7 @@ export function ChatSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="flex items-center justify-between">
             <div className="flex items-center">
-              <MessageSquare className="mr-2" />
+              <MessageSquare className="mr-2 h-4 w-4" />
               Channels
             </div>
             <CreateRoomDialog />
@@ -73,9 +74,12 @@ export function ChatSidebar() {
           </SidebarMenu>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel className="flex items-center">
-            <Users className="mr-2" />
-            Direct Messages
+          <SidebarGroupLabel className="flex items-center justify-between">
+            <div className="flex items-center">
+             <Users className="mr-2 h-4 w-4" />
+              Direct Messages
+            </div>
+             <CreateDmDialog />
           </SidebarGroupLabel>
           <SidebarMenu>
              {directMessages.length === 0 && (

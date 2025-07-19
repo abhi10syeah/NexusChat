@@ -33,8 +33,12 @@ class ApiClient {
       throw new Error(errorData.message || `Request failed with status ${res.status}`);
     }
     
-    // For POST requests that might not return a body (e.g., 201 Created)
-    if (res.status === 201 || res.status === 204) {
+    if (res.status === 204) {
+      return {} as T;
+    }
+
+    // For POST requests that might return a body (e.g., 201 Created)
+    if (res.status === 201) {
       // Try to parse json, but if it fails, return an empty object
       try {
         return await res.json();
@@ -71,8 +75,7 @@ class ApiClient {
     return this.request('/rooms');
   }
 
-  createRoom(name: string, members: string[] = []): Promise<any> {
-    const isPublic = !name.startsWith('@'); // A simple convention
+  createRoom(name: string, isPublic: boolean, members: string[] = []): Promise<any> {
     return this.request('/rooms', {
       method: 'POST',
       body: JSON.stringify({ name, isPublic, members }),

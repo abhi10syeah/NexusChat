@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
 
   await dbConnect();
   try {
+    // Find all users except the currently logged-in one
     const users = await User.find({_id: { $ne: decoded.user.id } }).select('username email _id');
     return NextResponse.json(users);
   } catch (error) {

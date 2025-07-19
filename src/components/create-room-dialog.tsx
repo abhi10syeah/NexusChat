@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useChatStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Users } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { ScrollArea } from "./ui/scroll-area";
 import { useAuth } from "@/context/AuthContext";
 
@@ -62,16 +62,16 @@ export function CreateRoomDialog() {
     setIsCreating(true);
     try {
       const roomName = values.name.startsWith('#') ? values.name : `#${values.name}`;
-      await createRoom(roomName, values.members);
+      await createRoom(roomName, true, values.members);
       toast({
-        title: "Room Created",
-        description: `The room "${roomName}" has been successfully created.`,
+        title: "Channel Created",
+        description: `The channel "${roomName}" has been successfully created.`,
       });
       form.reset();
       setOpen(false);
     } catch (error: any) {
       toast({
-        title: "Failed to Create Room",
+        title: "Failed to Create Channel",
         description: error.message || "An unexpected error occurred.",
         variant: "destructive",
       });
@@ -85,7 +85,7 @@ export function CreateRoomDialog() {
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="h-6 w-6">
           <Plus className="h-4 w-4" />
-          <span className="sr-only">Create Room</span>
+          <span className="sr-only">Create Channel</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -173,4 +173,3 @@ export function CreateRoomDialog() {
     </Dialog>
   );
 }
-

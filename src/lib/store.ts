@@ -17,7 +17,7 @@ interface ChatState {
   // Actions
   initialize: (user: User, token: string) => Promise<void>;
   selectRoom: (roomId: string) => Promise<void>;
-  createRoom: (name: string, memberIds?: string[]) => Promise<void>;
+  createRoom: (name: string, isPublic: boolean, memberIds?: string[]) => Promise<void>;
   sendMessage: (roomId: string, content: string) => Promise<void>;
   addMessage: (message: Message) => void;
   setTyping: (roomId: string, isTyping: boolean) => void;
@@ -56,7 +56,10 @@ const useChatStore = create<ChatState>((set, get) => ({
         api.getRooms(),
         api.getUsers()
       ]);
-      set({ rooms, users, isDataLoading: false });
+
+      const allUsers = [user, ...users];
+
+      set({ rooms, users: allUsers, isDataLoading: false });
       if (rooms.length > 0) {
         get().selectRoom(rooms[0]._id);
       }
@@ -90,9 +93,9 @@ const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  createRoom: async (name, memberIds = []) => {
+  createRoom: async (name, isPublic, memberIds = []) => {
     try {
-      const newRoom = await api.createRoom(name, memberIds);
+      const newRoom = await api.createRoom(name, isPublic, memberIds);
       set(state => ({
         rooms: [...state.rooms, newRoom],
       }));
