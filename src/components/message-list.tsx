@@ -31,6 +31,9 @@ export function MessageList({ messages }: MessageListProps) {
     if (senderId === 'ai-assistant') {
       return { _id: 'ai', username: 'AI Assistant', name: 'AI Assistant', avatarUrl: '' };
     }
+    if (currentUser?._id === senderId) {
+      return { ...currentUser, name: currentUser.username };
+    }
     const user = users.find(user => user._id === senderId);
     return user ? {...user, name: user.username} : { _id: 'unknown', username: 'Unknown', name: 'Unknown', avatarUrl: ''};
   };
