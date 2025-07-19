@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
 
     const jwtSecret = process.env.JWT_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined in the environment variables.');
+      console.error('JWT_SECRET is not defined in the environment variables.');
+      return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
     }
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: '1d' });
